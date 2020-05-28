@@ -44,6 +44,7 @@ public:
 
 public:
 	std::shared_ptr<IRegion> findRegion(edb::address_t address) const;
+	std::shared_ptr<IRegion> findRegion(const QString& name) const;
 	const QList<std::shared_ptr<IRegion>> &regions() const { return regions_; }
 	void clear();
 	void sync();

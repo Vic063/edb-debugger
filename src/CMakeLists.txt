@@ -104,10 +104,16 @@ set(edb_SRCS
 	qhexview/QHexView
 	qhexview/qhexview.cpp
 	qhexview/qhexview.h
+	session/Comment.cpp
+	session/Comment.h
+	session/Label.cpp
+	session/Label.h
 	session/SessionError.cpp
 	session/SessionError.h
 	session/SessionManager.cpp
 	session/SessionManager.h
+	session/SessionObject.cpp
+	session/SessionObject.h
 	widgets/NavigationHistory.cpp
 	widgets/NavigationHistory.h
 	widgets/QDisassemblyView.cpp

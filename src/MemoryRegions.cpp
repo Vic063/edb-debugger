@@ -100,6 +100,23 @@ std::shared_ptr<IRegion> MemoryRegions::findRegion(edb::address_t address) const
 }
 
 //------------------------------------------------------------------------------
+// Name: find_region
+// Desc:
+//------------------------------------------------------------------------------
+std::shared_ptr<IRegion> MemoryRegions::findRegion(const QString& name) const {
+
+	auto it = std::find_if(regions_.begin(), regions_.end(), [name](const std::shared_ptr<IRegion> &region) {
+		return region->name().compare(name) == 0;
+    });
+
+	if (it != regions_.end()) {
+		return *it;
+	}
+
+	return nullptr;
+}
+
+//------------------------------------------------------------------------------
 // Name: data
 // Desc:
 //------------------------------------------------------------------------------

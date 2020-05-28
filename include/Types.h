@@ -35,11 +35,5 @@ enum EventStatus {
 
 }
 
-/* Comment Type */
-struct Comment {
-	edb::address_t address;
-	QString comment;
-};
-
 #include "ArchTypes.h"
 #endif

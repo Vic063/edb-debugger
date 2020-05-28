@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "SessionManager.h"
 #include "IPlugin.h"
 #include "edb.h"
+#include "Comment.h"
+#include "Label.h"
 
 #include <QDateTime>
 #include <QDebug>
@@ -27,6 +29,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QMessageBox>
+
+#include <algorithm>
 
 namespace {
 
@@ -107,6 +111,29 @@ Result<void, SessionError> SessionManager::loadSession(const QString &filename) 
 
 	qDebug("Loading session file");
 	loadPluginData(); //First, load the plugin-data
+
+	/* Restore objects (comments, labels, breakpoints, etc...) */
+	QVariantMap objects = sessionData_["objects"].toMap();
+	for (auto it = objects.begin(); it != objects.end(); ++it) {
+		SessionObject *obj;
+		edb::address_t addr;
+		QVariantMap data = it.value().toMap();
+
+		addr = edb::v1::string_to_address(it.key()).value();
+		if (data["type"].toString().compare("label") == 0) {
+			obj = new Label(addr, data["label"].toString());
+		} else if (data["type"].toString().compare("comment") == 0) {
+			obj = new Comment(addr, data["comment"].toString());
+		} else {
+			obj = nullptr;
+			qDebug("Unknown session object type");
+		}
+
+		if (obj) {
+			obj->setModule(data["module"].toString());
+			this->add(obj);
+		}
+	}
 	return {};
 }
 
@@ -118,7 +145,7 @@ void SessionManager::saveSession(const QString &filename) {
 
 	qDebug("Saving session file");
 
-	QVariantMap plugin_data;
+	QVariantMap plugin_data, object_data;
 
 	for (QObject *plugin : edb::v1::plugin_list()) {
 		if (auto p = qobject_cast<IPlugin *>(plugin)) {
@@ -138,6 +165,22 @@ void SessionManager::saveSession(const QString &filename) {
 	sessionData_["timestamp"]   = QDateTime::currentDateTimeUtc();
 	sessionData_["plugin-data"] = plugin_data;
 
+	/* Save session objects */
+	std::for_each(objects_.begin(), objects_.end(), [&object_data](SessionObject *obj)
+	{
+		QVariantMap res;
+		edb::address_t offset;
+		const auto region = obj->region();
+
+		res = obj->save();
+		res["type"] = obj->type();
+		res["module"] = region->name();
+		offset = obj->address() - region->start() + region->base();
+		object_data[offset.toHexString()] = res;
+	});
+
+	sessionData_["objects"] = object_data;
+
 	auto object = QJsonObject::fromVariantMap(sessionData_);
 	QJsonDocument doc(object);
 
@@ -147,6 +190,9 @@ void SessionManager::saveSession(const QString &filename) {
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		file.write(json);
 	}
+
+	/* Cleanup */
+	objects_.clear();
 }
 
 /**
@@ -179,52 +225,41 @@ void SessionManager::loadPluginData() {
  * @return all comments from the sessionData_
  */
 QVariantList SessionManager::comments() const {
-	return sessionData_["comments"].toList();
+	QVariantList objects;
+
+	std::for_each(objects_.begin(), objects_.end(), [&objects](SessionObject *obj) {
+		if (obj->type().compare("comment") == 0) {
+			emit obj->onObjectRestored();
+			objects.push_back(obj->restore());
+		}
+	});
+
+	return objects;
 }
 
 /**
-* Adds a comment to the session_data
-* @param c (struct in Types.h)
-*/
-void SessionManager::addComment(const Comment &c) {
+ * @brief SessionManager::labels
+ * @return all labels from the sessionData_
+ */
+QVariantList SessionManager::labels() const {
+	QVariantList objects;
 
-	QVariantList comments_data = sessionData_["comments"].toList();
-
-	QVariantMap comment;
-	comment["address"] = c.address.toHexString();
-	comment["comment"] = c.comment;
-
-	//Check if we already have an entry with the same address and overwrite it
-	auto it = std::find_if(comments_data.begin(), comments_data.end(), [&comment](QVariant entry) {
-		QVariantMap data = entry.toMap();
-		return data["address"] == comment["address"];
+	std::for_each(objects_.begin(), objects_.end(), [&objects](SessionObject *obj) {
+		if (obj->type().compare("label") == 0) {
+			emit obj->onObjectRestored();
+			objects.push_back(obj->restore());
+		}
 	});
 
-	if (it != comments_data.end()) {
-		*it = comment;
-	} else {
-		comments_data.push_back(comment);
-	}
-
-	sessionData_["comments"] = comments_data;
+	return objects;
 }
 
-/**
-* Removes a comment from the session_data
-* @param address
-*/
-void SessionManager::removeComment(edb::address_t address) {
-	QString hexAddressString   = address.toHexString();
-	QVariantList comments_data = sessionData_["comments"].toList();
+void SessionManager::add(SessionObject *obj) {
+	//connect(this, SIGNAL(onModuleLoaded(const QString&)), obj, SLOT(restore(const QString&)));
+	connect(obj, SIGNAL(onObjectRestored()), obj, SLOT(setAddress()));
+	objects_.push_back(obj);
+}
 
-	auto it = std::find_if(comments_data.begin(), comments_data.end(), [&hexAddressString](QVariant entry) {
-		QVariantMap data = entry.toMap();
-		return data["address"] == hexAddressString;
-	});
+void SessionManager::remove(SessionObject *obj) {
 
-	if (it != comments_data.end()) {
-		comments_data.erase(it);
-	}
-
-	sessionData_["comments"] = comments_data;
 }

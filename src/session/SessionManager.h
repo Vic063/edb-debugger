@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SESSION_MANAGER_H_20170928_
 
 #include "SessionError.h"
+#include "SessionObject.h"
 #include "Status.h"
 #include "Types.h"
 
@@ -27,9 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <QString>
 #include <QVariant>
 
-class SessionManager {
-	Q_DECLARE_TR_FUNCTIONS(SessionManager)
-
+class SessionManager : public QObject {
+	Q_OBJECT
 private:
 	SessionManager() = default;
 
@@ -44,14 +44,20 @@ public:
 	Result<void, SessionError> loadSession(const QString &filename);
 	void saveSession(const QString &filename);
 	QVariantList comments() const;
-	void addComment(const Comment &c);
-	void removeComment(edb::address_t address);
+	QVariantList labels() const;
+
+	void add(SessionObject *obj);
+	void remove(SessionObject *obj);
+
+signals:
+	void onModuleLoaded(const QString&);
 
 private:
 	void loadPluginData();
 
 private:
 	QVariantMap sessionData_;
+	QList<SessionObject*> objects_;
 };
 
 #endif

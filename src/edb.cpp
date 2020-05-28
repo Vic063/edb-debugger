@@ -38,6 +38,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Prototype.h"
 #include "QHexView"
 #include "QtHelper.h"
+#include "SessionManager.h"
 #include "State.h"
 #include "Symbol.h"
 #include "SymbolManager.h"
@@ -191,6 +192,14 @@ void repaint_cpu_view() {
 	Debugger *const gui = ui();
 	Q_ASSERT(gui);
 	gui->ui.cpuView->update();
+}
+
+//------------------------------------------------------------------------------
+// Name: session_manager
+// Desc:
+//------------------------------------------------------------------------------
+SessionManager &session_manager() {
+	return SessionManager::instance();
 }
 
 //------------------------------------------------------------------------------

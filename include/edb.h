@@ -42,6 +42,7 @@ class IRegion;
 class ISymbolManager;
 class MemoryRegions;
 class Register;
+class SessionManager;
 class State;
 
 class QAbstractScrollArea;
@@ -72,6 +73,9 @@ namespace v1 {
 // some useful objects
 EDB_EXPORT extern IDebugger *debugger_core;
 EDB_EXPORT extern QWidget *debugger_ui;
+
+// the session mananger
+EDB_EXPORT SessionManager &session_manager();
 
 // the symbol mananger
 EDB_EXPORT ISymbolManager &symbol_manager();

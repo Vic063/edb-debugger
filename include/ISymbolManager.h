@@ -45,6 +45,7 @@ public:
 	virtual QString findAddressName(edb::address_t address, bool prefixed = true)      = 0;
 	virtual QHash<edb::address_t, QString> labels() const                              = 0;
 	virtual QStringList files() const                                                  = 0;
+	virtual void restoreLabels(const QVariantList &labels)                             = 0;
 };
 
 #endif

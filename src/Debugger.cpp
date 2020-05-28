@@ -2893,7 +2893,9 @@ void Debugger::setInitialDebuggerState() {
 
 		if (Result<void, SessionError> session_error = session_manager.loadSession(filename)) {
 			QVariantList comments_data = session_manager.comments();
+			QVariantList labels_data = session_manager.labels();
 			ui.cpuView->restoreComments(comments_data);
+			edb::v1::symbol_manager().restoreLabels(labels_data);
 		} else {
 			QMessageBox::warning(
 				this,

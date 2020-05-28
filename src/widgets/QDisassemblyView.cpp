@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "QDisassemblyView.h"
 #include "ArchProcessor.h"
+#include "Comment.h"
 #include "Configuration.h"
 #include "Function.h"
 #include "IAnalyzer.h"
@@ -2093,10 +2094,10 @@ std::shared_ptr<IRegion> QDisassemblyView::region() const {
 //------------------------------------------------------------------------------
 void QDisassemblyView::addComment(edb::address_t address, QString comment) {
 	qDebug("Insert Comment");
-	Comment temp_comment = {
-		address,
-		comment};
-	SessionManager::instance().addComment(temp_comment);
+	Comment *c;
+
+	c = new Comment(address.toUint(), comment);
+	SessionManager::instance().add(c);
 	comments_.insert(address, comment);
 }
 
@@ -2105,7 +2106,7 @@ void QDisassemblyView::addComment(edb::address_t address, QString comment) {
 // Desc: Removes a comment from the comment hash and returns the number of comments removed.
 //------------------------------------------------------------------------------
 int QDisassemblyView::removeComment(edb::address_t address) {
-	SessionManager::instance().removeComment(address);
+	//SessionManager::instance().removeComment(address);
 	return comments_.remove(address);
 }
 
